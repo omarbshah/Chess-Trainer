@@ -8,6 +8,8 @@ dependencies = [
     "pydantic>=2.8",
     "pydantic-settings>=2.4",
     "requests>=2.32",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
 ]
 
 [project.scripts]
@@ -17,6 +19,7 @@ chess-trainer = "chess_trainer.cli:main"
 test = [
     "pytest>=8.0",
     "responses>=0.25",
+    "httpx>=0.27",
 ]
 
 [build-system]
