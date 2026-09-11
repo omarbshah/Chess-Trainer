@@ -3,6 +3,7 @@ from __future__ import annotations
 import requests
 
 from chess_trainer.config import get_settings
+from chess_trainer.lichess_models import PuzzleDashboard
 
 
 class LichessClient:
@@ -22,6 +23,11 @@ class LichessClient:
         response = self._session.get(f"{self.base_url}{path}", **kwargs)
         response.raise_for_status()
         return response
+
+    def get_puzzle_dashboard(self, days: int) -> PuzzleDashboard:
+        """Fetch this account's puzzle performance dashboard for the last `days` days."""
+        response = self.get(f"/api/puzzle/dashboard/{days}")
+        return PuzzleDashboard.model_validate(response.json())
 
     def close(self) -> None:
         self._session.close()
