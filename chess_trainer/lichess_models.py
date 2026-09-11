@@ -30,3 +30,25 @@ class PuzzleDashboard(BaseModel):
     days: int
     overall: PuzzlePerformance = Field(alias="global")
     themes: dict[str, ThemeResult]
+
+
+class PuzzleActivityPuzzle(BaseModel):
+    """The puzzle attached to one puzzle-activity entry."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    fen: str
+    id: str
+    last_move: str = Field(alias="lastMove")
+    plays: int
+    rating: int
+    solution: list[str]
+    themes: list[str]
+
+
+class PuzzleActivityEntry(BaseModel):
+    """One line of `GET /api/puzzle/activity` (newline-delimited JSON), newest first."""
+
+    date: int
+    puzzle: PuzzleActivityPuzzle
+    win: bool
