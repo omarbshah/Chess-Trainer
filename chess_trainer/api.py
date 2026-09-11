@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
+
 from fastapi import FastAPI
+
+from chess_trainer.api_schemas import ResourceResponse, WeakThemeResponse
+from chess_trainer.lichess_client import LichessClient
+from chess_trainer.resources import get_resources
+from chess_trainer.weakness import rank_weak_themes
 
 app = FastAPI(title="Chess Trainer", version="0.1.0")
 
@@ -11,3 +18,24 @@ app = FastAPI(title="Chess Trainer", version="0.1.0")
 def health() -> dict[str, str]:
     """Liveness check."""
     return {"status": "ok"}
+
+
+@app.get("/api/weaknesses", response_model=list[WeakThemeResponse])
+def get_weaknesses(days: int = 30, top: int = 3, min_attempts: int = 5) -> list[WeakThemeResponse]:
+    """Ranked weakest puzzle themes for this account, each with its resources attached."""
+    with LichessClient() as client:
+        dashboard = client.get_puzzle_dashboard(days)
+
+    ranked = rank_weak_themes(dashboard, min_attempts=min_attempts)
+
+    return [
+        WeakThemeResponse(
+            theme_id=theme.theme_id,
+            display_name=theme.display_name,
+            performance=theme.performance,
+            attempts=theme.attempts,
+            first_win_rate=theme.first_win_rate,
+            resources=[ResourceResponse(**asdict(resource)) for resource in get_resources(theme.theme_id)],
+        )
+        for theme in ranked[:top]
+    ]
