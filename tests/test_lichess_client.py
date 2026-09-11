@@ -1,9 +1,9 @@
 import json
 
 import pytest
-import requests
 import responses
 
+from chess_trainer.errors import LichessAPIError, MissingApiTokenError
 from chess_trainer.lichess_client import LichessClient
 from chess_trainer.lichess_models import PuzzleActivityEntry, PuzzleDashboard
 
@@ -126,5 +126,21 @@ def test_get_raises_on_http_error() -> None:
 
     client = LichessClient(api_token="bad-token")
 
-    with pytest.raises(requests.HTTPError):
+    with pytest.raises(LichessAPIError) as exc_info:
         client.get_puzzle_dashboard(30)
+
+    assert exc_info.value.status_code == 401
+
+
+def test_get_puzzle_dashboard_raises_without_a_token() -> None:
+    client = LichessClient(api_token="")
+
+    with pytest.raises(MissingApiTokenError):
+        client.get_puzzle_dashboard(30)
+
+
+def test_get_puzzle_activity_raises_without_a_token() -> None:
+    client = LichessClient(api_token="")
+
+    with pytest.raises(MissingApiTokenError):
+        next(client.get_puzzle_activity())

@@ -2,17 +2,31 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from chess_trainer.api_schemas import ResourceResponse, ThemeResourcesResponse, WeakThemeResponse
+from chess_trainer.errors import LichessAPIError
 from chess_trainer.lichess_client import LichessClient
+from chess_trainer.logging_config import configure_logging
 from chess_trainer.resources import get_resources
 from chess_trainer.themes import THEME_NAMES
 from chess_trainer.weakness import rank_weak_themes
 
+configure_logging()
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="Chess Trainer", version="0.1.0")
+
+
+@app.exception_handler(LichessAPIError)
+async def handle_lichess_api_error(request: Request, exc: LichessAPIError) -> JSONResponse:
+    """Turn a failed Lichess call into a clean JSON error instead of a raw 500."""
+    logger.warning("Lichess API error on %s: %s", request.url.path, exc)
+    return JSONResponse(status_code=exc.status_code or 502, content={"detail": str(exc)})
 
 
 @app.get("/health")
