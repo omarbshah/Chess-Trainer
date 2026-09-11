@@ -19,3 +19,9 @@ class WeakThemeResponse(BaseModel):
     attempts: int
     first_win_rate: float
     resources: list[ResourceResponse]
+
+
+class ThemeResourcesResponse(BaseModel):
+    theme_id: str
+    display_name: str
+    resources: list[ResourceResponse]

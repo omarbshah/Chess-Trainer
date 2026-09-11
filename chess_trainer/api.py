@@ -6,9 +6,10 @@ from dataclasses import asdict
 
 from fastapi import FastAPI
 
-from chess_trainer.api_schemas import ResourceResponse, WeakThemeResponse
+from chess_trainer.api_schemas import ResourceResponse, ThemeResourcesResponse, WeakThemeResponse
 from chess_trainer.lichess_client import LichessClient
 from chess_trainer.resources import get_resources
+from chess_trainer.themes import THEME_NAMES
 from chess_trainer.weakness import rank_weak_themes
 
 app = FastAPI(title="Chess Trainer", version="0.1.0")
@@ -39,3 +40,14 @@ def get_weaknesses(days: int = 30, top: int = 3, min_attempts: int = 5) -> list[
         )
         for theme in ranked[:top]
     ]
+
+
+@app.get("/api/resources/{theme_id}", response_model=ThemeResourcesResponse)
+def get_theme_resources(theme_id: str) -> ThemeResourcesResponse:
+    """Curated learning resources for a single theme id, looked up directly
+    (no dashboard fetch) so the popup can show resources for any theme on demand."""
+    return ThemeResourcesResponse(
+        theme_id=theme_id,
+        display_name=THEME_NAMES.get(theme_id, theme_id),
+        resources=[ResourceResponse(**asdict(resource)) for resource in get_resources(theme_id)],
+    )
