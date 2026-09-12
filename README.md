@@ -45,7 +45,7 @@ chess-trainer weaknesses --days 30 --top 3
 Flags: `--days` (history window, default 30), `--top` (how many themes to show, default 3),
 `--min-attempts` (minimum attempts for a theme to be ranked, default 5).
 
-**API server** — the same logic over HTTP, for the browser extension coming in a later phase:
+**API server** — the same logic over HTTP, for the browser extension below:
 
 ```bash
 uvicorn chess_trainer.api:app --reload
@@ -56,6 +56,15 @@ uvicorn chess_trainer.api:app --reload
 | `GET /health` | Liveness check |
 | `GET /api/weaknesses?days=30&top=3&min_attempts=5` | Ranked weak themes with resources |
 | `GET /api/resources/{theme_id}` | Curated resources for one theme id |
+
+## Browser extension
+
+A small Manifest V3 extension (`extension/`) puts the same weak-theme diagnosis in a popup,
+right in the browser, instead of the CLI or a raw HTTP call. It talks to the API server above
+over `localhost`, so that still needs to be running.
+
+See [`extension/README.md`](extension/README.md) for how to load it unpacked, and
+[`extension/TESTING.md`](extension/TESTING.md) for a manual test checklist.
 
 ## Running tests
 
@@ -82,11 +91,11 @@ chess_trainer/
   api.py                  FastAPI app
   api_schemas.py          HTTP response models
 tests/                    mirrors the modules above
+extension/                Manifest V3 browser extension (popup + options page)
 ```
 
 ## Status
 
-This is Phase A — the diagnosis engine, usable standalone via the CLI or API above. Later
-phases add a minimal browser extension popup that shows this same data, then auto-detection of
-the puzzle you're currently on plus an AI-narrated explanation for puzzles you missed in your
-weakest theme.
+Phase A (the diagnosis engine — CLI + API) and Phase B (the browser extension popup showing
+that same data) are both done. Next up is Phase C: auto-detecting the puzzle you're currently
+on and adding an AI-narrated explanation for puzzles you missed in your weakest theme.
