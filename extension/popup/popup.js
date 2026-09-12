@@ -5,22 +5,26 @@ const API_BASE = "http://127.0.0.1:8000";
 async function fetchWeaknesses() {
   const response = await fetch(`${API_BASE}/api/weaknesses`);
   if (!response.ok) {
-    throw new Error(`Backend returned ${response.status}`);
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Backend returned ${response.status}`);
   }
   return response.json();
 }
 
+function setStatus(message) {
+  document.getElementById("status").textContent = message;
+}
+
 function renderThemes(themes) {
   const list = document.getElementById("theme-list");
-  const status = document.getElementById("status");
   list.innerHTML = "";
 
   if (themes.length === 0) {
-    status.textContent = "No weak themes to show yet — keep solving puzzles!";
+    setStatus("No weak themes to show yet — keep solving puzzles!");
     return;
   }
 
-  status.textContent = "";
+  setStatus("");
   for (const theme of themes) {
     list.appendChild(buildThemeItem(theme));
   }
@@ -63,12 +67,21 @@ function buildThemeItem(theme) {
 }
 
 async function init() {
+  document.getElementById("theme-list").innerHTML = "";
+  setStatus("Loading your weak themes…");
+
   try {
     const themes = await fetchWeaknesses();
     renderThemes(themes);
   } catch (err) {
-    // Loading/error UI polish lands in a later commit — for now, just don't crash the popup.
     console.error("Failed to fetch weaknesses:", err);
+    if (err instanceof TypeError) {
+      // fetch() rejects with a bare TypeError for network-level failures — backend not
+      // running, wrong port, CORS rejection, etc. There's no response to read a detail from.
+      setStatus("Can't reach the local backend. Is it running on port 8000?");
+    } else {
+      setStatus(`Couldn't load weaknesses: ${err.message}`);
+    }
   }
 }
 
