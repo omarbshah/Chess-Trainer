@@ -25,3 +25,10 @@ class ThemeResourcesResponse(BaseModel):
     theme_id: str
     display_name: str
     resources: list[ResourceResponse]
+
+
+class ExplainResponse(BaseModel):
+    puzzle_id: str
+    rating: int
+    themes: list[str]
+    explanation: str

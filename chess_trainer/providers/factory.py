@@ -6,6 +6,8 @@ real configuration yet.
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 from chess_trainer.config import Settings, get_settings
 from chess_trainer.providers.base import ProviderAdapter
 from chess_trainer.providers.circuit_breaker import CircuitBreaker
@@ -48,3 +50,12 @@ def build_default_router(settings: Settings | None = None) -> ProviderRouter:
     adapters.append(OllamaAdapter(base_url=settings.ollama_base_url, model=settings.ollama_model))
 
     return ProviderRouter(adapters, breaker_factory=_breaker_factory)
+
+
+@lru_cache
+def get_default_router() -> ProviderRouter:
+    """A process-wide singleton, built once from real settings. This matters beyond just
+    avoiding rebuild cost: each adapter's circuit breaker needs to persist across requests to
+    do anything useful — a fresh router (and fresh breakers) on every call would never
+    actually open."""
+    return build_default_router()

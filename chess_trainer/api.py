@@ -9,10 +9,19 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from chess_trainer.api_schemas import ResourceResponse, ThemeResourcesResponse, WeakThemeResponse
+from chess_trainer.api_schemas import (
+    ExplainResponse,
+    ResourceResponse,
+    ThemeResourcesResponse,
+    WeakThemeResponse,
+)
 from chess_trainer.errors import LichessAPIError
 from chess_trainer.lichess_client import LichessClient
 from chess_trainer.logging_config import configure_logging
+from chess_trainer.prompt import build_explanation_prompt
+from chess_trainer.providers.factory import get_default_router
+from chess_trainer.providers.router import AllProvidersFailedError
+from chess_trainer.puzzle_position import build_puzzle_position
 from chess_trainer.resources import get_resources
 from chess_trainer.themes import THEME_NAMES
 from chess_trainer.weakness import rank_weak_themes
@@ -39,6 +48,18 @@ async def handle_lichess_api_error(request: Request, exc: LichessAPIError) -> JS
     """Turn a failed Lichess call into a clean JSON error instead of a raw 500."""
     logger.warning("Lichess API error on %s: %s", request.url.path, exc)
     return JSONResponse(status_code=exc.status_code or 502, content={"detail": str(exc)})
+
+
+@app.exception_handler(AllProvidersFailedError)
+async def handle_all_providers_failed(
+    request: Request, exc: AllProvidersFailedError
+) -> JSONResponse:
+    """Every AI provider failed or was circuit-broken — a clean 502, not a raw 500."""
+    logger.warning("Every AI provider failed on %s: %s", request.url.path, exc)
+    return JSONResponse(
+        status_code=502,
+        content={"detail": "No AI provider could explain this puzzle right now."},
+    )
 
 
 @app.get("/health")
@@ -76,4 +97,23 @@ def get_theme_resources(theme_id: str) -> ThemeResourcesResponse:
         theme_id=theme_id,
         display_name=THEME_NAMES.get(theme_id, theme_id),
         resources=[ResourceResponse(**asdict(resource)) for resource in get_resources(theme_id)],
+    )
+
+
+@app.get("/api/explain/{puzzle_id}", response_model=ExplainResponse)
+def explain_puzzle(puzzle_id: str) -> ExplainResponse:
+    """AI-narrated explanation of why a puzzle's solution works, grounded in its FEN/solution
+    and the tactical facts `tactics.py` can verify about the starting position."""
+    with LichessClient() as client:
+        detail = client.get_puzzle(puzzle_id)
+
+    position = build_puzzle_position(detail)
+    prompt = build_explanation_prompt(position)
+    explanation = get_default_router().explain(prompt)
+
+    return ExplainResponse(
+        puzzle_id=position.puzzle_id,
+        rating=position.rating,
+        themes=position.themes,
+        explanation=explanation,
     )
