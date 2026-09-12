@@ -28,10 +28,10 @@ PUZZLE_DETAIL_PAYLOAD = {
 }
 
 
-def _build_prompt() -> str:
+def _build_prompt(weak_theme_ids: list[str] | None = None) -> str:
     detail = PuzzleDetail.model_validate(PUZZLE_DETAIL_PAYLOAD)
     position = build_puzzle_position(detail)
-    return build_explanation_prompt(position)
+    return build_explanation_prompt(position, weak_theme_ids=weak_theme_ids)
 
 
 def test_prompt_includes_the_position_and_metadata() -> None:
@@ -65,3 +65,23 @@ def test_prompt_instructs_the_model_not_to_go_beyond_the_given_solution() -> Non
     prompt = _build_prompt()
 
     assert "Don't suggest any other moves" in prompt
+
+
+def test_prompt_has_no_prioritization_note_by_default() -> None:
+    prompt = _build_prompt()
+
+    assert "current weakest themes" not in prompt
+
+
+def test_prompt_prioritizes_a_weak_theme_that_tags_this_puzzle() -> None:
+    # fcEqc is tagged ["middlegame", "long", "mateIn3", "sacrifice"] — "mateIn3" overlaps.
+    prompt = _build_prompt(weak_theme_ids=["mateIn3", "hangingPiece"])
+
+    assert "This puzzle is tagged with mateIn3" in prompt
+    assert "current weakest themes" in prompt
+
+
+def test_prompt_has_no_prioritization_note_when_no_weak_theme_matches() -> None:
+    prompt = _build_prompt(weak_theme_ids=["fork", "hangingPiece"])
+
+    assert "current weakest themes" not in prompt

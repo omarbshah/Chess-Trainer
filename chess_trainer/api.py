@@ -100,15 +100,30 @@ def get_theme_resources(theme_id: str) -> ThemeResourcesResponse:
     )
 
 
+def _current_weak_theme_ids() -> list[str]:
+    """Best-effort: if the dashboard can't be fetched (no token configured, a Lichess error,
+    not enough puzzle history yet), explain without weak-theme prioritization rather than
+    failing the whole request over it — the explainer should still work standalone."""
+    try:
+        with LichessClient() as client:
+            dashboard = client.get_puzzle_dashboard(30)
+    except LichessAPIError as error:
+        logger.info("Could not fetch weak themes for prioritization: %s", error)
+        return []
+    return [theme.theme_id for theme in rank_weak_themes(dashboard)[:3]]
+
+
 @app.get("/api/explain/{puzzle_id}", response_model=ExplainResponse)
 def explain_puzzle(puzzle_id: str) -> ExplainResponse:
     """AI-narrated explanation of why a puzzle's solution works, grounded in its FEN/solution
-    and the tactical facts `tactics.py` can verify about the starting position."""
+    and the tactical facts `tactics.py` can verify about the starting position — prioritized
+    toward the player's current weakest theme when this puzzle happens to be tagged with it."""
     with LichessClient() as client:
         detail = client.get_puzzle(puzzle_id)
 
     position = build_puzzle_position(detail)
-    prompt = build_explanation_prompt(position)
+    weak_theme_ids = _current_weak_theme_ids()
+    prompt = build_explanation_prompt(position, weak_theme_ids=weak_theme_ids)
     explanation = get_default_router().explain(prompt)
 
     return ExplainResponse(

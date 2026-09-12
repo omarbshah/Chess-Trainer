@@ -3,8 +3,9 @@ from fastapi.testclient import TestClient
 
 import chess_trainer.api as api_module
 from chess_trainer.api import app
+from chess_trainer.errors import MissingApiTokenError
 from chess_trainer.lichess_client import LichessClient
-from chess_trainer.lichess_models import PuzzleDetail
+from chess_trainer.lichess_models import PuzzleDashboard, PuzzleDetail
 from chess_trainer.providers.router import AllProvidersFailedError
 
 client = TestClient(app)
@@ -47,10 +48,22 @@ class _FakeRouter:
         return self.response
 
 
+def _raise_missing_token(self: LichessClient, days: int) -> PuzzleDashboard:
+    raise MissingApiTokenError()
+
+
 @pytest.fixture(autouse=True)
 def _stub_get_puzzle(monkeypatch: pytest.MonkeyPatch) -> None:
     detail = PuzzleDetail.model_validate(PUZZLE_DETAIL_PAYLOAD)
     monkeypatch.setattr(LichessClient, "get_puzzle", lambda self, puzzle_id: detail)
+
+
+@pytest.fixture(autouse=True)
+def _stub_get_puzzle_dashboard_to_fail(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`explain_puzzle` also fetches the dashboard for weak-theme prioritization — stub it to
+    fail by default (as if no token were configured) so these tests never make a real network
+    call. Tests that care about the prioritization behavior itself override this."""
+    monkeypatch.setattr(LichessClient, "get_puzzle_dashboard", _raise_missing_token)
 
 
 def test_explain_puzzle_returns_the_router_response(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -88,3 +101,50 @@ def test_explain_puzzle_returns_502_when_every_provider_fails(
     response = client.get("/api/explain/fcEqc")
 
     assert response.status_code == 502
+
+
+def test_explain_puzzle_succeeds_even_when_weak_theme_lookup_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The autouse dashboard-failure stub above is exactly this scenario (no token
+    # configured) — asserting it explicitly here so the graceful-fallback behavior has a
+    # test of its own, not just an incidental side effect of every other test's setup.
+    fake_router = _FakeRouter(response="ok")
+    monkeypatch.setattr(api_module, "get_default_router", lambda: fake_router)
+
+    response = client.get("/api/explain/fcEqc")
+
+    assert response.status_code == 200
+    assert "current weakest themes" not in fake_router.received_prompt
+
+
+def test_explain_puzzle_prioritizes_a_theme_the_player_is_weak_at(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # fcEqc is tagged ["middlegame", "long", "mateIn3", "sacrifice"]; make "mateIn3" this
+    # account's single weakest theme and confirm that reaches the actual prompt sent out.
+    dashboard = PuzzleDashboard(
+        days=30,
+        **{"global": {"firstWins": 40, "nb": 50, "performance": 1800, "puzzleRatingAvg": 1750, "replayWins": 5}},
+        themes={
+            "mateIn3": {
+                "theme": "mateIn3",
+                "results": {
+                    "firstWins": 2,
+                    "nb": 10,
+                    "performance": 1300,
+                    "puzzleRatingAvg": 1350,
+                    "replayWins": 0,
+                },
+            },
+        },
+    )
+    monkeypatch.setattr(LichessClient, "get_puzzle_dashboard", lambda self, days: dashboard)
+
+    fake_router = _FakeRouter(response="ok")
+    monkeypatch.setattr(api_module, "get_default_router", lambda: fake_router)
+
+    response = client.get("/api/explain/fcEqc")
+
+    assert response.status_code == 200
+    assert "This puzzle is tagged with mateIn3" in fake_router.received_prompt

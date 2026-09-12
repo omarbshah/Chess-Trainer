@@ -1,8 +1,7 @@
 """Builds the text prompt sent to the AI provider router — the one place that turns a
 validated `PuzzlePosition` (plus the tactical facts pulled from its starting position) into
 words. Keeping this in one function makes what the AI is actually told fully inspectable and
-testable, instead of scattered string-building wherever `/api/explain` (the next commit)
-happens to need it.
+testable, instead of scattered string-building wherever `/api/explain` needs it.
 """
 
 from __future__ import annotations
@@ -13,11 +12,17 @@ from chess_trainer.puzzle_position import PuzzlePosition
 from chess_trainer.tactics import Fork, HangingPiece, Pin, find_forks, find_hanging_pieces, find_pins
 
 
-def build_explanation_prompt(position: PuzzlePosition) -> str:
+def build_explanation_prompt(
+    position: PuzzlePosition, weak_theme_ids: list[str] | None = None
+) -> str:
+    """`weak_theme_ids` (optional) is the player's current weakest themes, e.g. from
+    `rank_weak_themes` — if any of them tag this puzzle, the prompt asks the AI to prioritize
+    explaining that specific tactical idea over the puzzle's other theme tags."""
     board = chess.Board(position.fen)
     facts = _describe_tactical_facts(
         find_hanging_pieces(board), find_pins(board), find_forks(board)
     )
+    matched_weak_themes = [t for t in position.themes if weak_theme_ids and t in weak_theme_ids]
 
     lines = [
         "You are a chess coach explaining a Lichess puzzle to a player studying this exact "
@@ -39,6 +44,15 @@ def build_explanation_prompt(position: PuzzlePosition) -> str:
             "others):"
         )
         lines.extend(f"- {fact}" for fact in facts)
+
+    if matched_weak_themes:
+        lines.append("")
+        lines.append(
+            f"This puzzle is tagged with {', '.join(matched_weak_themes)} — one of this "
+            "player's current weakest themes. Prioritize explaining that tactical idea clearly "
+            "and connect it to why puzzles like this one tend to trip them up, over the "
+            "puzzle's other theme tags."
+        )
 
     lines.append("")
     lines.append(
