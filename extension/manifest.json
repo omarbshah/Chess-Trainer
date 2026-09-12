@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Chess Trainer",
+  "version": "0.1.0",
+  "description": "Shows your weakest Lichess puzzle themes and curated resources to study them.",
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "permissions": ["storage"]
+}
