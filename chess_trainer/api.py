@@ -6,6 +6,7 @@ import logging
 from dataclasses import asdict
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from chess_trainer.api_schemas import ResourceResponse, ThemeResourcesResponse, WeakThemeResponse
@@ -20,6 +21,17 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Chess Trainer", version="0.1.0")
+
+# The popup fetches this API straight from its chrome-extension:// origin. Unpacked extension
+# ids are derived from the local install path (not known ahead of time), so we match the whole
+# scheme rather than a fixed origin — fine here since every endpoint is a read-only GET with no
+# cookies/credentials involved.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"chrome-extension://.*",
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(LichessAPIError)
