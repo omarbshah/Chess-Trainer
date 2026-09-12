@@ -23,5 +23,11 @@
     "page": "options/options.html",
     "open_in_tab": true
   },
-  "permissions": ["storage"]
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["https://lichess.org/training/*"],
+      "js": ["content/content.js"]
+    }
+  ]
 }
