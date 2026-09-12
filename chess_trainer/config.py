@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     lichess_api_token: str = ""
     lichess_base_url: str = "https://lichess.org"
 
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.8-flash"
+
 
 @lru_cache
 def get_settings() -> Settings:
