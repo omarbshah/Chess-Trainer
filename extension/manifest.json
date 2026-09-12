@@ -24,6 +24,9 @@
     "open_in_tab": true
   },
   "permissions": ["storage"],
+  "background": {
+    "service_worker": "background/background.js"
+  },
   "content_scripts": [
     {
       "matches": ["https://lichess.org/training/*"],

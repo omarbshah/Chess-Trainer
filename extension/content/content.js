@@ -23,4 +23,6 @@ function getCurrentPuzzleId() {
 }
 
 const puzzleId = getCurrentPuzzleId();
-console.log("Chess Trainer: current puzzle id ->", puzzleId);
+if (puzzleId) {
+  chrome.runtime.sendMessage({ type: "PUZZLE_DETECTED", puzzleId });
+}

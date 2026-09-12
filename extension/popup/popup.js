@@ -66,6 +66,15 @@ function buildThemeItem(theme) {
   return item;
 }
 
+async function getCurrentPuzzleId() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) {
+    return null;
+  }
+  const response = await chrome.runtime.sendMessage({ type: "GET_CURRENT_PUZZLE", tabId: tab.id });
+  return response?.puzzleId ?? null;
+}
+
 async function init() {
   document.getElementById("theme-list").innerHTML = "";
   setStatus("Loading your weak themes…");
@@ -83,6 +92,10 @@ async function init() {
       setStatus(`Couldn't load weaknesses: ${err.message}`);
     }
   }
+
+  // Not surfaced in the UI yet — later commits (the "Explain this" button, weakest-theme
+  // prioritization) will do something with this. For now just confirm the plumbing works.
+  console.log("Chess Trainer: current tab's puzzle id ->", await getCurrentPuzzleId());
 }
 
 document.addEventListener("DOMContentLoaded", init);
