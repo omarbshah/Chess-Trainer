@@ -16,10 +16,16 @@ function getCurrentPuzzleId() {
     }
   }
 
-  // Fallback: a specific puzzle's URL is /training/<id>. The "next puzzle" landing page
-  // (bare /training, no id in the URL) has nothing to fall back to here.
+  // Fallback: a specific puzzle's URL is /training/<id>. But that same URL shape is also used
+  // for "angles" that aren't a single puzzle at all — "mix" (all themes) and "healthyMix"
+  // keep cycling through puzzles via AJAX without the URL ever changing, and the daily puzzle
+  // lives at /training/daily. None of those are real puzzle ids — trusting the URL there
+  // would silently send a made-up id to the backend (this is exactly how "mix" ended up
+  // getting explained as if it were a puzzle).
+  const NON_PUZZLE_PATH_SEGMENTS = new Set(["mix", "healthyMix", "daily"]);
   const match = location.pathname.match(/^\/training\/(\w+)/);
-  return match ? match[1] : null;
+  const candidate = match ? match[1] : null;
+  return candidate && !NON_PUZZLE_PATH_SEGMENTS.has(candidate) ? candidate : null;
 }
 
 function createExplainWidget() {
