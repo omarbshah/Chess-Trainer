@@ -3,8 +3,21 @@
   "name": "Chess Trainer",
   "version": "0.1.0",
   "description": "Shows your weakest Lichess puzzle themes and curated resources to study them.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "action": {
-    "default_popup": "popup/popup.html"
+    "default_title": "Chess Trainer",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "options_ui": {
     "page": "options/options.html",
