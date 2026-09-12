@@ -3,8 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <title>Chess Trainer Settings</title>
+  <link rel="stylesheet" href="options.css" />
 </head>
 <body>
+  <h1>Chess Trainer Settings</h1>
+
+  <form id="settings-form">
+    <label for="lichess-token">Lichess API token</label>
+    <input type="password" id="lichess-token" name="lichess-token" autocomplete="off" />
+    <p class="hint">
+      Create a personal token at
+      <a href="https://lichess.org/account/oauth/token" target="_blank" rel="noopener noreferrer">
+        lichess.org/account/oauth/token
+      </a>.
+    </p>
+    <button type="submit">Save</button>
+    <p id="status" class="status" role="status"></p>
+  </form>
+
   <script src="options.js"></script>
 </body>
 </html>
