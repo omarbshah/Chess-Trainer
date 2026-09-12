@@ -56,6 +56,21 @@ def test_explain_raises_provider_error_when_ollama_isnt_running() -> None:
 
 
 @responses.activate
+def test_explain_raises_a_clear_error_on_rate_limit() -> None:
+    responses.add(
+        responses.POST,
+        GENERATE_URL,
+        json={"error": "too many requests"},
+        status=429,
+    )
+
+    adapter = OllamaAdapter()
+
+    with pytest.raises(ProviderError, match="rate-limited"):
+        adapter.explain("Explain this puzzle.")
+
+
+@responses.activate
 def test_explain_raises_provider_error_on_unexpected_response_shape() -> None:
     responses.add(
         responses.POST,

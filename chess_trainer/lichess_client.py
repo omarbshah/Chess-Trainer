@@ -37,6 +37,11 @@ class LichessClient:
             response.raise_for_status()
         except requests.HTTPError as error:
             logger.warning("Lichess API request to %s failed: %s", path, error)
+            if response.status_code == 429:
+                raise LichessAPIError(
+                    "Lichess rate-limited this request — try again in a moment.",
+                    status_code=429,
+                ) from error
             raise LichessAPIError(
                 f"Lichess API request to {path} failed with status {response.status_code}",
                 status_code=response.status_code,

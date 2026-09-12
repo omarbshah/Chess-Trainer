@@ -180,6 +180,24 @@ def test_get_raises_on_http_error() -> None:
     assert exc_info.value.status_code == 401
 
 
+@responses.activate
+def test_get_raises_a_clear_error_on_rate_limit() -> None:
+    responses.add(
+        responses.GET,
+        "https://lichess.org/api/puzzle/dashboard/30",
+        json={"error": "too many requests"},
+        status=429,
+    )
+
+    client = LichessClient(api_token="test-token")
+
+    with pytest.raises(LichessAPIError) as exc_info:
+        client.get_puzzle_dashboard(30)
+
+    assert exc_info.value.status_code == 429
+    assert "rate-limited" in str(exc_info.value)
+
+
 def test_get_puzzle_dashboard_raises_without_a_token() -> None:
     client = LichessClient(api_token="")
 

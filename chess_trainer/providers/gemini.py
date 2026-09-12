@@ -7,7 +7,7 @@ import logging
 
 import requests
 
-from chess_trainer.providers.base import ProviderAdapter, ProviderError
+from chess_trainer.providers.base import ProviderAdapter, ProviderError, raise_for_provider_response
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +39,11 @@ class GeminiAdapter(ProviderAdapter):
                 json={"contents": [{"parts": [{"text": prompt}]}]},
                 timeout=self.timeout,
             )
-            response.raise_for_status()
         except requests.RequestException as error:
             logger.warning("Gemini request failed: %s", error)
             raise ProviderError(f"Gemini request failed: {error}") from error
+
+        raise_for_provider_response("Gemini", response)
 
         body = response.json()
         try:

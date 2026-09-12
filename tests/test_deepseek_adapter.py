@@ -55,6 +55,21 @@ def test_explain_raises_provider_error_on_http_failure() -> None:
 
 
 @responses.activate
+def test_explain_raises_a_clear_error_on_rate_limit() -> None:
+    responses.add(
+        responses.POST,
+        CHAT_URL,
+        json={"error": "quota exceeded"},
+        status=429,
+    )
+
+    adapter = DeepSeekAdapter(api_key="test-key")
+
+    with pytest.raises(ProviderError, match="rate-limited"):
+        adapter.explain("Explain this puzzle.")
+
+
+@responses.activate
 def test_explain_raises_provider_error_on_unexpected_response_shape() -> None:
     responses.add(
         responses.POST,

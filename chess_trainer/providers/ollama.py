@@ -10,7 +10,7 @@ import logging
 
 import requests
 
-from chess_trainer.providers.base import ProviderAdapter, ProviderError
+from chess_trainer.providers.base import ProviderAdapter, ProviderError, raise_for_provider_response
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +42,11 @@ class OllamaAdapter(ProviderAdapter):
                 json={"model": self.model, "prompt": prompt, "stream": False},
                 timeout=self.timeout,
             )
-            response.raise_for_status()
         except requests.RequestException as error:
             logger.warning("Ollama request failed: %s", error)
             raise ProviderError(f"Ollama request failed: {error}") from error
+
+        raise_for_provider_response("Ollama", response)
 
         body = response.json()
         try:
