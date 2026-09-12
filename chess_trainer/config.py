@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.8-flash"
 
+    deepseek_api_key: str = ""
+    deepseek_model: str = "deepseek-flash"
+
 
 @lru_cache
 def get_settings() -> Settings:
