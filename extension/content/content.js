@@ -93,9 +93,4 @@ async function onExplainClick(button, panel) {
   }
 }
 
-const puzzleId = getCurrentPuzzleId();
-if (puzzleId) {
-  chrome.runtime.sendMessage({ type: "PUZZLE_DETECTED", puzzleId });
-}
-
 createExplainWidget();

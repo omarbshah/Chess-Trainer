@@ -1,10 +1,9 @@
 """Tries each configured provider in order, skipping any whose circuit breaker is currently
 open and falling back to the next on failure.
 
-This is the scaffold: it works against the abstract `ProviderAdapter` interface and is fully
-testable with fakes, but nothing constructs it with real adapters yet — Gemini/DeepSeek/Groq/
-Ollama land over the next few commits, and wiring them all together here (in the right
-fallback order, with tuned thresholds) is commit 38.
+Works against the abstract `ProviderAdapter` interface and is fully testable with fakes — the
+real adapters (Gemini/DeepSeek/Groq/Ollama, and optionally Claude) are assembled into an
+instance of this by `providers/factory.py`.
 """
 
 from __future__ import annotations
