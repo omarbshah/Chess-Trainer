@@ -37,6 +37,19 @@ extension — see `README.md` for how.
 - [ ] Reopening the options page shows the previously saved token still populated
 - [ ] Clearing the field and saving persists an empty value (doesn't error)
 
+## "Explain this puzzle" button (content script)
+
+- [ ] Open a puzzle at lichess.org/training — a green "Explain this puzzle" button appears
+  fixed in the bottom-right corner
+- [ ] Clicking it shows "Explaining…", then replaces it with an AI-narrated explanation
+- [ ] The explanation text is specific to the actual puzzle on screen (spot-check against
+  `GET /api/explain/{puzzle_id}` for that puzzle's id)
+- [ ] Button is disabled (not double-clickable) while a request is in flight
+- [ ] Stop the backend, click the button → panel shows a "Couldn't get an explanation" message,
+  not a silent failure or a raw browser error
+- [ ] Open the page's own DevTools console — no CORS errors from the explain request (it's
+  routed through the background service worker, not fetched directly from the page)
+
 ## Icons / manifest
 
 - [ ] Toolbar icon shows the pawn glyph, not a placeholder/broken image
