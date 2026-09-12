@@ -8,7 +8,7 @@ import requests
 
 from chess_trainer.config import get_settings
 from chess_trainer.errors import LichessAPIError, MissingApiTokenError
-from chess_trainer.lichess_models import PuzzleActivityEntry, PuzzleDashboard
+from chess_trainer.lichess_models import PuzzleActivityEntry, PuzzleDashboard, PuzzleDetail
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +78,12 @@ class LichessClient:
             if not line:
                 continue
             yield PuzzleActivityEntry.model_validate(json.loads(line))
+
+    def get_puzzle(self, puzzle_id: str) -> PuzzleDetail:
+        """Fetch a single puzzle by id — its FEN, solution, and source game. Public endpoint,
+        no token needed (unlike the dashboard/activity, which are account-scoped)."""
+        response = self._request(f"/api/puzzle/{puzzle_id}")
+        return PuzzleDetail.model_validate(response.json())
 
     def _require_token(self) -> None:
         """Dashboard/activity are account-scoped; fail with a clear message up

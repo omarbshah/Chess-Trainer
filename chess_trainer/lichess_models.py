@@ -52,3 +52,51 @@ class PuzzleActivityEntry(BaseModel):
     date: int
     puzzle: PuzzleActivityPuzzle
     win: bool
+
+
+class PuzzlePerf(BaseModel):
+    """The game's variant/speed, as attached to a puzzle's source game."""
+
+    key: str
+    name: str
+
+
+class PuzzleGamePlayer(BaseModel):
+    name: str
+    id: str
+    color: str
+    rating: int
+
+
+class PuzzleDetailGame(BaseModel):
+    """The `game` half of `GET /api/puzzle/{id}` — the real game this puzzle was pulled from."""
+
+    id: str
+    perf: PuzzlePerf
+    rated: bool
+    players: list[PuzzleGamePlayer]
+    pgn: str
+    clock: str | None = None
+
+
+class PuzzleDetailPuzzle(BaseModel):
+    """The `puzzle` half of `GET /api/puzzle/{id}` — unlike `PuzzleActivityPuzzle`, this
+    includes `initialPly` (the dashboard/activity endpoints don't)."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    rating: int
+    plays: int
+    solution: list[str]
+    themes: list[str]
+    fen: str
+    last_move: str = Field(alias="lastMove")
+    initial_ply: int = Field(alias="initialPly")
+
+
+class PuzzleDetail(BaseModel):
+    """Response shape of `GET /api/puzzle/{id}` — a single puzzle plus its source game."""
+
+    game: PuzzleDetailGame
+    puzzle: PuzzleDetailPuzzle

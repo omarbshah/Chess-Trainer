@@ -5,7 +5,7 @@ import responses
 
 from chess_trainer.errors import LichessAPIError, MissingApiTokenError
 from chess_trainer.lichess_client import LichessClient
-from chess_trainer.lichess_models import PuzzleActivityEntry, PuzzleDashboard
+from chess_trainer.lichess_models import PuzzleActivityEntry, PuzzleDashboard, PuzzleDetail
 
 DASHBOARD_PAYLOAD = {
     "days": 30,
@@ -27,6 +27,34 @@ DASHBOARD_PAYLOAD = {
                 "replayWins": 2,
             },
         }
+    },
+}
+
+# A real puzzle (id "fcEqc"), fetched from https://lichess.org/api/puzzle/fcEqc to make sure
+# the model/client match Lichess's actual response shape rather than a guessed-at one.
+PUZZLE_DETAIL_PAYLOAD = {
+    "game": {
+        "id": "ROdRPQtw",
+        "perf": {"key": "blitz", "name": "Blitz"},
+        "rated": True,
+        "players": [
+            {"name": "butchersboys2802", "id": "butchersboys2802", "color": "white", "rating": 1690},
+            {"name": "tartinemariol", "id": "tartinemariol", "color": "black", "rating": 1773},
+        ],
+        "pgn": "Nf3 d5 b3 Nf6 Bb2 c5 e3 Nc6 d4 Bg4 h3 Bxf3 Qxf3 cxd4 exd4 e6 Nd2 Bd6 O-O-O O-O Kb1 "
+        "Qc7 Bd3 Nb4 a3 Nxd3 Qxd3 Rac8 Rhe1 Qa5 b4 Qb6 Nb3 Ne4 Re2 Rc7 g3 Rfc8 c4 dxc4 Qxe4 "
+        "cxb3 Rd3 a5 Rxb3 axb4 d5 Qc5 dxe6 Qc4 exf7+ Qxf7 Rf3 Qc4",
+        "clock": "5+3",
+    },
+    "puzzle": {
+        "id": "fcEqc",
+        "rating": 1289,
+        "plays": 671,
+        "solution": ["e4e8", "c8e8", "e2e8", "d6f8", "f3f8"],
+        "themes": ["middlegame", "long", "mateIn3", "sacrifice"],
+        "fen": "2r3k1/1pr3pp/3b4/8/1pq1Q3/P4RPP/1B2RP2/1K6 w - - 1 1",
+        "lastMove": "f7c4",
+        "initialPly": 53,
     },
 }
 
@@ -113,6 +141,26 @@ def test_get_puzzle_activity_passes_query_params() -> None:
     assert "max=5" in sent_url
     assert "before=123" in sent_url
     assert "since=100" in sent_url
+
+
+@responses.activate
+def test_get_puzzle_parses_response() -> None:
+    responses.add(
+        responses.GET,
+        "https://lichess.org/api/puzzle/fcEqc",
+        json=PUZZLE_DETAIL_PAYLOAD,
+        status=200,
+    )
+
+    client = LichessClient(api_token="")  # public endpoint — no token needed
+    detail = client.get_puzzle("fcEqc")
+
+    assert isinstance(detail, PuzzleDetail)
+    assert detail.puzzle.id == "fcEqc"
+    assert detail.puzzle.initial_ply == 53
+    assert detail.puzzle.last_move == "f7c4"
+    assert detail.game.id == "ROdRPQtw"
+    assert detail.game.perf.key == "blitz"
 
 
 @responses.activate
